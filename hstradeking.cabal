@@ -1,0 +1,15 @@
+name: hstradeking
+version: 0.0.1
+cabal-version: >=1.8
+build-type: Simple
+license: AllRightsReserved
+license-file: ""
+synopsis: Tradeking API bindings for Haskell
+description:
+data-dir: ""
+
+library
+    build-depends: base -any, hoauth -any
+    exposed-modules: Finance.TradeKing
+    hs-source-dirs: src
+    ghc-options: -O2
