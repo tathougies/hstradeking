@@ -9,7 +9,17 @@ description:
 data-dir: ""
 
 library
-    build-depends: base -any, hoauth -any
-    exposed-modules: Finance.TradeKing
+    build-depends: base -any, hoauth -any, text -any, containers -any, time -any, numbers -any, aeson -any,
+                   bytestring -any, vector -any, old-locale -any, safe -any
+    exposed-modules: Finance.TradeKing Finance.TradeKing.Quotes Finance.TradeKing.Types Finance.Asset
+                     Finance.Asset.Types Finance.Asset.Quote Finance.TradeKing.Service
     hs-source-dirs: src
+    ghc-options: -O2
+
+executable tradeking
+    build-depends: hstradeking ==0.0.1, base -any, configurator -any, old-locale -any, safe -any, time -any,
+                   numbers -any, aeson -any, bytestring -any, vector -any, containers -any, text -any,
+                   hoauth -any
+    main-is: Client.hs
+    hs-source-dirs: client
     ghc-options: -O2

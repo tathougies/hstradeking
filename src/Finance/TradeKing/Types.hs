@@ -1,5 +1,7 @@
 module Finance.TradeKing.Types where
 
+import Finance.Asset.Types
+
 data TradeKing = TradeKing {
   apiBase :: String,
   authorizeURL :: String,
@@ -18,8 +20,10 @@ data TradeKingApp = TradeKingApp {
 data Format = JSON | XML
    deriving (Show, Read, Eq, Ord, Bounded, Enum)
 
-data Command = Accounts
-   deriving (Show, Read, Eq, Ord, Bounded, Enum)
+data Command = Accounts |
+               Clock |
+               Quote [Asset] [String]
+   deriving (Show, Read, Eq, Ord)
 
 defaultTk :: TradeKing
 defaultTk = TradeKing {
