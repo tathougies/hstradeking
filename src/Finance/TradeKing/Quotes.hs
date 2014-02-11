@@ -1,10 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Finance.TradeKing.Quotes (stockQuotes, stockInfos) where
+-- | High-level access to TradeKing APIs
+module Finance.TradeKing.Quotes (stockQuotes, stockInfos, streamQuotes) where
 
-import Finance.Asset
 import Finance.TradeKing.Types
-import Finance.TradeKing.Service (invokeSimple)
+import Finance.TradeKing.Service (invokeSimple, streamQuotes')
 
+import qualified Control.Exception.Lifted as E
 import Control.Applicative
 import Control.Monad
 
@@ -12,6 +13,7 @@ import qualified Data.ByteString.Lazy.Char8 as LBS8
 import qualified Data.Vector as V
 import qualified Data.Text as T
 import Data.Maybe
+import Data.Conduit
 import Data.Time
 import Data.Time.Clock.POSIX
 import Data.Monoid
@@ -66,6 +68,50 @@ instance FromJSON fields => FromJSON (TKQuotes fields) where
 adapt :: Read a => String -> Parser a
 adapt = maybe mzero return . readMay
 
+instance FromJSON StreamOutput where
+    parseJSON (Object v) = do
+      let parseQuote (Object v) =
+              do
+                timestamp <- (maybe mzero return . parseTime defaultTimeLocale "%FT%T%z") =<< v .: "datetime"
+                let day = localDay . zonedTimeToLocalTime $ timestamp
+                    timeFormat = "%R"
+                    timeZone = zonedTimeZone timestamp
+                StreamQuote <$> pure (zonedTimeToUTC timestamp)
+                            <*> (Stock <$> v .: "symbol")
+                            <*> (unTKPrice <$> v .: "ask")
+                            <*> (adapt =<< v .: "asksz")
+                            <*> (unTKPrice <$> v .: "bid")
+                            <*> (adapt =<< v .: "bidsz")
+                            <*> v .: "qcond"
+          parseQuote _ = mzero
+
+          parseTrade (Object v) =
+              do
+                timestamp <- (maybe mzero return . parseTime defaultTimeLocale "%FT%T%z") =<< v .: "datetime"
+                let day = localDay . zonedTimeToLocalTime $ timestamp
+                    timeFormat = "%R"
+                    timeZone = zonedTimeZone timestamp
+                StreamTrade <$> pure (zonedTimeToUTC timestamp)
+                            <*> (Stock <$> v .: "symbol")
+                            <*> (unTKPrice <$> v .: "last")
+                            <*> (adapt =<< v .: "vl")
+                            <*> (adapt =<< v .: "cvol")
+                            <*> (adapt =<< v .: "vwap")
+                            <*> (v .: "tcond")
+                            <*> (Exchange <$> v .: "exch")
+          parseTrade _ = mzero
+      status <- v .:? "status"
+      quote <- v .:? "quote"
+      trade <- v .:? "trade"
+      case status of
+        Nothing -> case quote of
+                     Nothing -> case trade of
+                                  Nothing -> mzero
+                                  Just t -> parseTrade t
+                     Just q -> parseQuote q
+        Just s -> return (StreamStatus s)
+    parseJSON _ = mzero
+
 instance FromJSON TKStockQuote where
   parseJSON (Object v) = do
     timestamp <- (maybe mzero return . parseTime defaultTimeLocale "%FT%T%z") =<< v .: "datetime"
@@ -119,6 +165,7 @@ instance FromJSON TKStockInfo where
         (unTKStockQuote <$> parseJSON o))
   parseJSON _ = mzero
 
+-- | Retrieve the stock quotes for the stocks specified.
 stockQuotes :: TradeKingApp -> [Stock] -> IO [StockQuote]
 stockQuotes app stocks = do
   let command = Quote assets ["timestamp", "ask", "ask_time", "asksz",
@@ -130,6 +177,7 @@ stockQuotes app stocks = do
     Left e -> fail ("Malformed data returned: " ++ e)
     Right quoteData -> return (map unTKStockQuote . unTKQuotes . unTKQuoteResponse $ quoteData)
 
+-- | Retrieve information on the stock symbols specified.
 stockInfos :: TradeKingApp -> [Stock] -> IO [StockInfo]
 stockInfos app stocks = do
   let command = Quote assets []
@@ -138,3 +186,19 @@ stockInfos app stocks = do
   case eitherDecode (rspPayload response) of
     Left e -> fail ("Malformed data returned: " ++ e)
     Right infoData -> return (map unTKStockInfo . unTKQuotes . unTKQuoteResponse $ infoData)
+
+-- | Run a streaming operation on the stocks specified. This takes a function which will be passed a
+--   `Source` from `Data.Conduit` that will yield the streaming quote information.
+streamQuotes :: TradeKingApp -> [Stock] -> (Source (ResourceT IO) StreamOutput -> ResourceT IO b) -> IO b
+streamQuotes app stocks f = streamQuotes' app stocks doStream
+    where doStream bsrc = do
+            (bsrc', finalizer) <- unwrapResumable bsrc
+            let decodeMessages = await >>= \x ->
+                                 case x of
+                                   Nothing -> return ()
+                                   Just x -> case eitherDecode (LBS8.fromChunks [x]) of
+                                               Left e -> fail ("Malformed data returned: " ++ e)
+                                               Right d -> do
+                                                 yield d
+                                                 decodeMessages
+            f (bsrc' $= decodeMessages) `E.finally` finalizer

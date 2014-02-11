@@ -1,3 +1,9 @@
+-- | Main API module
+--
+--   Use the functions in `Finance.TradeKing.Quotes` for access to the TradeKing API.
+--
+--   The functions in `Finance.TradeKing.Service` provide lower-level access to the TradeKing API,
+--   handling things such as OAuth.
 module Finance.TradeKing
        (module Finance.TradeKing.Types,
         module Finance.TradeKing.Service,

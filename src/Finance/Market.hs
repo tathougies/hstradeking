@@ -8,6 +8,7 @@ data MarketState = PreHours |
                    Closed
     deriving (Show, Read, Eq, Ord, Enum, Bounded)
 
+-- | For use with the TradeKing `/market/clock` API call.
 data MarketClock = MarketClock {
   mcState     :: MarketState,
   mcNextState :: MarketState,

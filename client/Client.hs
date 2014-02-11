@@ -5,8 +5,9 @@ import Client.Quote
 
 import Data.String
 import Data.Configurator
+import Data.Conduit
 
-import Finance.TradeKing
+import Finance.TradeKing hiding (Option)
 
 import Prelude hiding (lookup)
 
@@ -77,4 +78,5 @@ main = getArgs >>= \args ->
          ('-':_):_ -> usage -- command starts with '-'
          "quote":args -> buildApp args >>= doQuote args
          "info":args -> buildApp args >>= doInfo args
+         "stream":args -> buildApp args >>= doStream args
          _ -> usage

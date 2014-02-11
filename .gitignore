@@ -7,3 +7,6 @@ cabal-dev
 *.chs.h
 .virthualenv
 Secret.hs
+.cabal-sandbox
+cabal.sandbox.config
+.#*
