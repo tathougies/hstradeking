@@ -27,7 +27,7 @@ import Safe (readMay)
 import System.Locale
 
 newtype TKQuoteResponse fields = TKQuoteResponse { unTKQuoteResponse :: TKQuotes fields }
-newtype TKQuotes fields = TKQuotes { unTKQuotes :: [fields] }
+newtype TKQuotes field = TKQuotes { unTKQuotes :: [field] }
 newtype TKStockQuote = TKStockQuote { unTKStockQuote :: StockQuote }
 newtype TKStockInfo = TKStockInfo { unTKStockInfo :: StockInfo }
 newtype TKPrice = TKPrice Fixed4

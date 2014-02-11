@@ -2,8 +2,8 @@ name: hstradeking
 version: 0.1.0
 cabal-version: >=1.8
 build-type: Simple
-license: AllRightsReserved
-license-file: ""
+license: BSD3
+license-file: LICENSE
 synopsis: Tradeking API bindings for Haskell
 description:
     This is a Haskell binding for the TradeKing developers API (https://developers.tradeking.com/).
@@ -34,25 +34,25 @@ description:
     You can also request quotes programmatically, using the API described here.
 
 data-dir: ""
+category: Finance
+maintainer: Travis Athougies <travis@athougies.net>
 extra-source-files:
    client/Client/Quote.hs
 
 library
-    build-depends: base -any, hoauth -any, text -any, containers -any, time -any, numbers -any, aeson -any,
-                   bytestring -any, vector -any, old-locale -any, safe -any, conduit -any, http-conduit -any, resourcet -any,
-                   RSA <=1.2.2.0, case-insensitive -any, lifted-base -any
+    build-depends: base >= 3 && < 5, hoauth >=0.3.5, text >=0.11.3.1, bytestring >=0.9, containers,
+                   aeson >=0.6, old-locale, safe, conduit >=1.0.12, http-conduit >=2.0.0.0,
+                   resourcet >=0.4, RSA <=1.2.2.0, case-insensitive, lifted-base >=0.2,
+                   vector, time, numbers
     exposed-modules: Finance.TradeKing Finance.TradeKing.Quotes Finance.TradeKing.Types
                      Finance.TradeKing.Service
     hs-source-dirs: src
-    ghc-options: -O2
 
 executable tradeking
-    build-depends: hstradeking ==0.1.0, base -any, configurator -any, old-locale -any, safe -any, time -any,
-                   numbers -any, aeson -any, bytestring -any, vector -any, containers -any, text -any,
-                   hoauth -any, conduit -any, http-conduit -any, resourcet -any, RSA <=1.2.2.0, transformers -any
+    build-depends: hstradeking ==0.1.0, base >= 3 && < 5, conduit >=1.0.12, configurator >=0.2.0.2,
+                   bytestring >=0.9, resourcet >=0.4, transformers >=0.3
     main-is: Client.hs
     hs-source-dirs: client
-    ghc-options: -O2
 
 source-repository head
     type:     git
