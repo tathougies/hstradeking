@@ -7,9 +7,11 @@
 module Finance.TradeKing
        (module Finance.TradeKing.Types,
         module Finance.TradeKing.Service,
-        module Finance.TradeKing.Quotes)
+        module Finance.TradeKing.Quotes,
+        module Finance.TradeKing.Config)
        where
 
 import Finance.TradeKing.Types
 import Finance.TradeKing.Service
 import Finance.TradeKing.Quotes
+import Finance.TradeKing.Config

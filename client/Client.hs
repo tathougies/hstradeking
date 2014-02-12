@@ -1,15 +1,13 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 import qualified Control.Exception as E
 import Client.Quote
 
 import Data.String
-import Data.Configurator
 import Data.Conduit
 
 import Finance.TradeKing hiding (Option)
 
-import Prelude hiding (lookup)
+
+
 
 import System.Console.GetOpt
 import System.Environment
@@ -31,32 +29,25 @@ buildApp args = do
   let (actions, nonOptions, errors) = getOpt RequireOrder options args
 
   -- Look for the config file in certain locations
-  tkConf <- load [Optional "/etc/tradeking.conf", Optional "~/.tradeking"]
-
-  let optionFromConf options f key = do
-        value <- lookup tkConf key
-        case value of
-          Nothing -> return options
-          Just value -> return ((f value):options)
-  confActions <- optionFromConf [] ConsumerKey "consumer-key"
-  confActions <- optionFromConf confActions ConsumerSecret "consumer-secret"
-  confActions <- optionFromConf confActions OAuthToken "oauth-token"
-  confActions <- optionFromConf confActions OAuthTokenSecret "oauth-token-secret"
-  let allActions = actions ++ confActions -- Favor arguments over configuration
-
-      emptyTradeKingApp = TradeKingApp {
+  let defEmptyTradeKingApp =  TradeKingApp {
         tradeKing = defaultTk,
         consumerKey = error "Missing consumer key",
         consumerSecret = error "Missing consumer secret",
         oAuthToken = error "Missing oauth token",
         oAuthTokenSecret = error "Missing oauth token secret"
         }
-      modifyApp a (ConsumerKey v) = a { consumerKey = fromString v }
+
+  emptyTradeKingAppR <- readTKConf defaultTKConfs
+  let emptyTradeKingApp = case emptyTradeKingAppR of
+                             Left err -> defEmptyTradeKingApp
+                             Right tkApp -> tkApp
+
+  let modifyApp a (ConsumerKey v) = a { consumerKey = fromString v }
       modifyApp a (ConsumerSecret v) = a { consumerSecret = fromString v }
       modifyApp a (OAuthToken v) = a { oAuthToken = fromString v }
       modifyApp a (OAuthTokenSecret v) = a { oAuthTokenSecret = fromString v }
 
-      finalTradeKingApp = foldl modifyApp emptyTradeKingApp allActions
+      finalTradeKingApp = foldl modifyApp emptyTradeKingApp actions
   E.evaluate (consumerKey finalTradeKingApp)
   E.evaluate (consumerSecret finalTradeKingApp)
   E.evaluate (oAuthToken finalTradeKingApp)
