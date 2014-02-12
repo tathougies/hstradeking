@@ -82,7 +82,7 @@ instance FromJSON StreamOutput where
                             <*> (adapt =<< v .: "asksz")
                             <*> (unTKPrice <$> v .: "bid")
                             <*> (adapt =<< v .: "bidsz")
-                            <*> v .: "qcond"
+                            <*> v .:? "qcond"
           parseQuote _ = mzero
 
           parseTrade (Object v) =
@@ -97,7 +97,7 @@ instance FromJSON StreamOutput where
                             <*> (adapt =<< v .: "vl")
                             <*> (adapt =<< v .: "cvol")
                             <*> (adapt =<< v .: "vwap")
-                            <*> (v .: "tcond")
+                            <*> (v .:? "tcond")
                             <*> (Exchange <$> v .: "exch")
           parseTrade _ = mzero
       status <- v .:? "status"

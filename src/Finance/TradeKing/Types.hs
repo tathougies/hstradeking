@@ -172,7 +172,7 @@ data StreamOutput = StreamStatus String
                     , stqAskSz        :: Word
                     , stqBid          :: Price
                     , stdBidSz        :: Word
-                    , stqQCond        :: String }
+                    , stqQCond        :: Maybe String }
 
                     -- | Represents a trade that just took place
                   | StreamTrade
@@ -182,7 +182,7 @@ data StreamOutput = StreamStatus String
                     , tVol            :: Word
                     , tCumVol         :: Word
                     , tVWAP           :: Float
-                    , tCond           :: String
+                    , tCond           :: Maybe String
                     , tExch           :: Exchange }
                     deriving (Show)
 
