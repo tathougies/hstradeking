@@ -10,6 +10,7 @@ import Control.Applicative
 import Control.Monad
 
 import qualified Data.ByteString.Lazy.Char8 as LBS8
+import qualified Data.ByteString.Char8 as BS
 import qualified Data.Vector as V
 import qualified Data.Text as T
 import Data.Maybe
@@ -68,6 +69,10 @@ instance FromJSON fields => FromJSON (TKQuotes fields) where
 adapt :: Read a => String -> Parser a
 adapt = maybe mzero return . readMay
 
+adaptMay :: Read a => Maybe String -> Parser (Maybe a)
+adaptMay (Just s) = maybe mzero return . Just . readMay $ s
+adaptMay Nothing = return Nothing
+
 instance FromJSON StreamOutput where
     parseJSON (Object v) = do
       let parseQuote (Object v) =
@@ -93,10 +98,10 @@ instance FromJSON StreamOutput where
                     timeZone = zonedTimeZone timestamp
                 StreamTrade <$> pure (zonedTimeToUTC timestamp)
                             <*> (Stock <$> v .: "symbol")
-                            <*> (unTKPrice <$> v .: "last")
+                            <*> (unTKPrice <$> (maybe (v .: "hi") return =<< (v .:? "last")))
                             <*> (adapt =<< v .: "vl")
                             <*> (adapt =<< v .: "cvol")
-                            <*> (adapt =<< v .: "vwap")
+                            <*> (adaptMay =<< v .:? "vwap")
                             <*> (v .:? "tcond")
                             <*> (Exchange <$> v .: "exch")
           parseTrade _ = mzero
@@ -193,12 +198,20 @@ streamQuotes :: TradeKingApp -> [Stock] -> (Source (ResourceT IO) StreamOutput -
 streamQuotes app stocks f = streamQuotes' app stocks doStream
     where doStream bsrc = do
             (bsrc', finalizer) <- unwrapResumable bsrc
-            let decodeMessages = await >>= \x ->
-                                 case x of
-                                   Nothing -> return ()
-                                   Just x -> case eitherDecode (LBS8.fromChunks [x]) of
-                                               Left e -> fail ("Malformed data returned: " ++ e)
-                                               Right d -> do
-                                                 yield d
-                                                 decodeMessages
-            f (bsrc' $= decodeMessages) `E.finally` finalizer
+            let decodeMessages a = await >>= \x ->
+                                   case x of
+                                     Nothing -> return ()
+                                     Just x -> case eitherDecode (LBS8.fromChunks (a [x])) of
+                                                 Left e ->
+                                                     -- Now we check to see if what we have is valid JSON. If it's not, we haven't read enough bytes in.
+                                                     -- Otherwise, it's actually malfored, so we error out...
+                                                     case (eitherDecode (LBS8.fromChunks (a [x])) :: Either String Value) of
+                                                       -- The parse failed, so we just don't have enough JSON...
+                                                       Left _ -> decodeMessages ((x:).a)
+
+                                                       -- If the parse succeeeded, we have JSON, but we couldn't parse it.
+                                                       Right _ -> fail ("Malformed data returned: " ++ e ++ "\nData was: " ++ BS.unpack x)
+                                                 Right d -> do
+                                                   yield d
+                                                   decodeMessages id
+            f (bsrc' $= decodeMessages id) `E.finally` finalizer

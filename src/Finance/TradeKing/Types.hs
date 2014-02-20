@@ -59,7 +59,7 @@ newtype Stock = Stock { unStock :: T.Text }
 -- | Type to represent SEC CUSIP identifiers
 newtype CUSIP = CUSIP T.Text
     deriving (Show, Read, Eq, Ord, IsString)
-newtype Exchange = Exchange T.Text
+newtype Exchange = Exchange { unExchange :: T.Text }
     deriving (Show, Read, Eq, Ord, IsString)
 
 -- ** Prices
@@ -171,7 +171,7 @@ data StreamOutput = StreamStatus String
                     , stqAsk          :: Price
                     , stqAskSz        :: Word
                     , stqBid          :: Price
-                    , stdBidSz        :: Word
+                    , stqBidSz        :: Word
                     , stqQCond        :: Maybe String }
 
                     -- | Represents a trade that just took place
@@ -181,7 +181,7 @@ data StreamOutput = StreamStatus String
                     , tPrice          :: Price
                     , tVol            :: Word
                     , tCumVol         :: Word
-                    , tVWAP           :: Float
+                    , tVWAP           :: Maybe Float
                     , tCond           :: Maybe String
                     , tExch           :: Exchange }
                     deriving (Show)
