@@ -8,6 +8,7 @@ import Finance.TradeKing.Service (invokeSimple, streamQuotes')
 import qualified Control.Exception.Lifted as E
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Trans.Resource (ResourceT)
 
 import qualified Data.ByteString.Lazy.Char8 as LBS8
 import qualified Data.ByteString.Char8 as BS
