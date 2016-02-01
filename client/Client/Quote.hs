@@ -7,7 +7,7 @@ import Control.Monad.Trans.Resource
 import qualified Data.ByteString.Char8 as BS
 import Data.String
 import Data.Conduit.Binary hiding (mapM_)
-import Data.Conduit hiding (mapM_)
+import Data.Conduit
 
 import Finance.TradeKing
 

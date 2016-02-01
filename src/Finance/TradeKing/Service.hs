@@ -68,7 +68,8 @@ streamQuotes' tk stocks f = do
   oauthReq <- runOAuthM tok' $ signRq2 HMACSHA1 Nothing (fromJust . parseURL $ uri)
   let oauthReq' = unpackRq oauthReq
       req' = req { HttpC.requestHeaders = map (\(h,b) -> (CI.mk (fromString h), fromString b)) (Req.toList (reqHeaders oauthReq')) }
-  HttpC.withManager $ \manager -> do
-                           response <- HttpC.http req' manager
-                           let bsrc = HttpC.responseBody response
-                           f bsrc
+  manager <- HttpC.newManager HttpC.tlsManagerSettings
+  runResourceT $ do
+      response <- HttpC.http req' manager
+      let bsrc = HttpC.responseBody response
+      f bsrc
